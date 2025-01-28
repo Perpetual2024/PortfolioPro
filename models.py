@@ -15,8 +15,8 @@ class User(db.Model):
 
     #relationships
     project = db.relationship('Project', backref='user', lazy=True)
-    bookmarks = db.relationship('Bookmark', backref='user', lazy=True)
-    comments = db.relationship('Comment', backref='user', lazy=True)
+    bookmarks = db.relationship('Bookmark', back_populates='user', lazy=True)
+    comments = db.relationship('Comment', back_populates='user', lazy=True)
 
 
 
@@ -43,8 +43,8 @@ class Project(db.Model):
    
    #relationships
     skills = db.relationship('ProjectSkill', backref='project', lazy=True, cascade='all, delete-orphan')
-    bookmarks = db.relationship('Bookmark', backref='project', lazy=True, cascade='all, delete-orphan')
-    comments = db.relationship('Comment', backref='project', lazy=True, )
+    bookmarks = db.relationship('Bookmark', back_populates='project', lazy=True, cascade='all, delete-orphan')
+    comments = db.relationship('Comment', back_populates='project', lazy=True, )
 
     
 
@@ -54,6 +54,7 @@ class ProjectSkill(db.Model):
     #relationships
     project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False )
     skill_id = db.Column(db.Integer, db.ForeignKey('skills.id'), nullable=False)
+
 
     #uniqueconstraint
     __table_args__ = (db.UniqueConstraint('project_id', 'skill_id', name='unique_project_skill'),)
@@ -66,7 +67,9 @@ class Bookmark(db.Model):
     project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
-    
+    #relationship
+    user = db.relationship('User', back_populates='bookmarks', lazy=True)
+    project = db.relationship('Project', back_populates='bookmarks', lazy=True)
 
 class Comment(db.Model):
     __tablename__ = 'comments'
@@ -76,6 +79,8 @@ class Comment(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
     updated_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
-
+    #relationships
+    user = db.relationship('User', back_populates='comments', lazy=True)
+    project = db.relationship('Project', back_populates='comments', lazy=True)
     
 
