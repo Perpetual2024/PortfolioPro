@@ -1,23 +1,81 @@
 from flask_sqlalchemy import SQLAlchemy
 
+
 db = SQLAlchemy()
 
 
 class User(db.Model):
-    pass
+    __tablename__ =  'users'
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    role = db.Column(db.String(80), nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
+    updated_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
 
-class Skills(db.Model):
-    pass
+    #relationships
+    project = db.relationship('Project', backref='user', lazy=True)
+    bookmarks = db.relationship('Bookmark', backref='user', lazy=True)
+    comments = db.relationship('Comment', backref='user', lazy=True)
 
-class Projects(db.Model):
-    pass
 
-class ProjectSkills(db.Model):
-    pass
+
+   
+
+class Skill(db.Model):
+    __tablename__ =  'skills'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(80), unique=True, nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
+    updated_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
+
+    
+    
+
+class Project(db.Model):
+    __tablename__ =  'projects'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(80), unique=True, nullable=False)
+    description = db.Column(db.String(120), nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
+    updated_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+   
+   #relationships
+    skills = db.relationship('ProjectSkill', backref='project', lazy=True, cascade='all, delete-orphan')
+    bookmarks = db.relationship('Bookmark', backref='project', lazy=True, cascade='all, delete-orphan')
+    comments = db.relationship('Comment', backref='project', lazy=True, )
+
+    
+
+class ProjectSkill(db.Model):
+    __tablename__ =  'project_skills'
+    id = db.Column(db.Integer, primary_key=True)
+    #relationships
+    project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False )
+    skill_id = db.Column(db.Integer, db.ForeignKey('skills.id'), nullable=False)
+
+    #uniqueconstraint
+    __table_args__ = (db.UniqueConstraint('project_id', 'skill_id', name='unique_project_skill'),)
+
+    
 
 class Bookmark(db.Model):
-    pass
+    __tablename__ =  'bookmarks'
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
+    
 
 class Comment(db.Model):
-    pass
+    __tablename__ = 'comments'
+    id = db.Column(db.Integer, primary_key=True)
+    content = db.Column(db.String(120), nullable=False)
+    project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
+    updated_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
+
+    
 
