@@ -88,8 +88,37 @@ class UserData(Resource):
         db.session.rollback()
         return {"message": "Error deleting user"}, 500
      
+class ProjectData(Resource):
+    def get(self, project_id=None):
+        if project_id:
+            # Get a specific project
+            project = Project.query.get(project_id)
+            if not project:
+                return {"message": "Project not found"}, 404
+            return {"project": project.to_dict()}, 200
+        else:
+            # Get all projects
+            projects = Project.query.all()
+            return [{"id": project.id, "title": project.title} for project in projects], 200
+        
+    def post(self):
+        # Create a new project
+        data = request.json
+        new_project = Project(title=data["title"], description=data["description"], user_id=data ["user_id"])
+        db.session.add(new_project)
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return {"message": "Error creating project"}, 50 
+        return {"message": f"Project {new_project.title} created"}, 201
+
+    
+
+     
 
 api.add_resource(UserData, '/user', '/user/<int:user_id>')
+api.add_resource(ProjectData, '/project', '/project/<int:project_id>')
         
      
 if __name__== '__main__':
