@@ -28,7 +28,7 @@ class UserData(Resource):
                 return {"message": "User not found"}, 404
             return {
                 "id": user.id,
-                "username": user.username,  # Fixed from 'name' to 'username'
+                "username": user.username, 
                 "email": user.email,
                 "role": user.role,
                 "projects": [{"id": p.id, "title": p.title} for p in user.projects]
@@ -41,14 +41,14 @@ class UserData(Resource):
     def post(self):
         # Create a new user
         data = request.json
-        new_user = User(username=data['name'], email=data['email'], role=data['role'])  # 'name' -> 'username'
+        new_user = User(username=data['name'], email=data['email'], role=data['role'])  
         db.session.add(new_user)
         try:
             db.session.commit()
         except Exception as e:
             db.session.rollback()
             return {"message": "Username or email exists"}, 400
-        return {"message": f"User {new_user.username} created"}, 201  # 'name' -> 'username'
+        return {"message": f"User {new_user.username} created"}, 201 
     
 
 
@@ -73,6 +73,21 @@ class UserData(Resource):
             db.session.rollback()
             return {"message": "Error updating user"}, 500
         
+    def delete(self, user_id):
+     # Delete a user
+    
+     user = User.query.get(user_id)
+     if not user:
+        return {"message": "User not found"}, 404
+
+     try:
+        db.session.delete(user)
+        db.session.commit()
+        return {"message": f"User {user.username} deleted"}, 200
+     except Exception as e:
+        db.session.rollback()
+        return {"message": "Error deleting user"}, 500
+     
 
 api.add_resource(UserData, '/user', '/user/<int:user_id>')
         
