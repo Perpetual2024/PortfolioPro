@@ -113,7 +113,40 @@ class ProjectData(Resource):
             return {"message": "Error creating project"}, 50 
         return {"message": f"Project {new_project.title} created"}, 201
 
-    
+    def put(self, project_id):
+        # Update a project
+        project = Project.query.get(project_id)
+        if not project:
+            return {"message": "Project not found"}, 404
+        
+        data = request.json
+        project.title = data["title"]
+        project.description = data["description"]
+        project.user_id= data["user_id"]
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return {"message": "Error updating project"}, 500
+        
+
+    def delete(self, project_id):
+        # Delete a project
+        project = Project.query.get(project_id)
+        if not project:
+            return {"message": "Project not found"}, 404
+        
+        try:
+            db.session.delete(project)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return {"message": "Error deleting project"}, 500
+
+
+
+        
+        
 
      
 
