@@ -2,6 +2,8 @@ from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy 
 from flask_migrate import Migrate
 from flask_restful import Api, Resource
+from flask_cors import CORS
+from datetime import datetime
 from models import db, User, Project, Comment, ProjectSkill, Skill, Bookmark
 
 app = Flask(__name__)
@@ -11,6 +13,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 migrate = Migrate(app, db)
 api = Api(app)
+cors = CORS(app)
 
 @app.route('/')
 def index():
@@ -28,7 +31,7 @@ class UserData(Resource):
                 "username": user.username, 
                 "email": user.email,
                 "role": user.role,
-                "projects": [{"id": p.id, "title": p.title} for p in user.projects]
+                "projects": [{"id": p.id, "title": p.title} for p in user.project]
             }, 200
          
         # Get all users
@@ -92,7 +95,12 @@ class ProjectData(Resource):
             project = Project.query.get(project_id)
             if not project:
                 return {"message": "Project not found"}, 404
-            return {"project": project.to_dict()}, 200
+            return {
+            "id": project.id,
+            "title": project.title,
+            "description": project.description,
+            "user_id": project.user_id,
+        }, 200
         else:
             # Get all projects
             projects = Project.query.all()
@@ -157,7 +165,7 @@ class BookmarkData(Resource):
                     "id": bookmark.id,
                     "project_id": bookmark.project_id,
                     "project_title": bookmark.project.title if bookmark.project else None,
-                    "created_at": bookmark.created_at,
+                    "created_at": bookmark.created_at.isoformat(),
                 }
                 for bookmark in bookmarks
             ], 200
@@ -170,7 +178,7 @@ class BookmarkData(Resource):
                 "user_id": bookmark.user_id,
                 "project_id": bookmark.project_id,
                 "project_title": bookmark.project.title if bookmark.project else None,
-                "created_at": bookmark.created_at,
+                "created_at": bookmark.created_at.isoformat(),
             }
             for bookmark in bookmarks
         ], 200
@@ -242,8 +250,8 @@ class CommentData(Resource):
                     "id": comment.id,
                     "user_id": comment.user_id,
                     "content": comment.content,
-                    "created_at": comment.created_at,
-                    "updated_at": comment.updated_at,
+                    "created_at": comment.created_at.isoformat(),
+                    "updated_at": comment.updated_at.isoformat(),
                 }
                 for comment in comments
             ], 200
@@ -258,8 +266,8 @@ class CommentData(Resource):
                     "id": comment.id,
                     "project_id": comment.project_id,
                     "content": comment.content,
-                    "created_at": comment.created_at,
-                    "updated_at": comment.updated_at,
+                    "created_at": comment.created_at.isoformat(),
+                    "updated_at": comment.updated_at.isoformat(),
                 }
                 for comment in comments
             ], 200
@@ -272,8 +280,8 @@ class CommentData(Resource):
                 "user_id": comment.user_id,
                 "project_id": comment.project_id,
                 "content": comment.content,
-                "created_at": comment.created_at,
-                "updated_at": comment.updated_at,
+                "created_at": comment.created_at.isoformat(),
+                "updated_at": comment.updated_at.isoformat(),
             }
             for comment in comments
         ], 200
@@ -352,8 +360,8 @@ class SkillData(Resource):
                     "id": skill.id,
                     "name": skill.name,
                     "details": skill.details,
-                    "created_at": skill.created_at,
-                    "updated_at": skill.updated_at,
+                    "created_at": skill.created_at.isoformat(),
+                    "updated_at": skill.updated_at.isoformat(),
                 }
                 for skill in skills
             ], 200
@@ -514,3 +522,5 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
     app.run(debug=True, port=5555)
+
+

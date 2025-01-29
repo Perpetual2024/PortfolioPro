@@ -1,4 +1,6 @@
+
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import validates
 
 
 db = SQLAlchemy()
@@ -18,7 +20,19 @@ class User(db.Model):
     bookmarks = db.relationship('Bookmark', back_populates='user', lazy=True)
     comments = db.relationship('Comment', back_populates='user', lazy=True)
 
-
+#validation
+@validates('email')
+def validate_email(self, key, value):
+    if '@' not in value:
+        raise AssertionError('Invalid email')
+        return value
+    
+@validates('username') 
+def validate_username(self, key, value):
+    if len(value) < 3:
+        raise AssertionError('Username must be at least 3 characters long')
+    return value
+  
 
    
 
@@ -44,8 +58,8 @@ class Project(db.Model):
    
    #relationships
     skills = db.relationship('Skill', secondary='project_skills', backref=db.backref('projects', lazy='dynamic'))
-    bookmarks = db.relationship('Bookmark', back_populates='project', lazy=True, cascade='all, delete-orphan')
-    comments = db.relationship('Comment', back_populates='project', lazy=True, )
+    bookmarks = db.relationship('Bookmark', back_populates='project', lazy=True)
+    comments = db.relationship('Comment', back_populates='project', lazy=True, cascade='all, delete-orphan')
 
     
 
@@ -67,7 +81,7 @@ class Bookmark(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    created_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
+    created_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp(),)
     #relationship
     user = db.relationship('User', back_populates='bookmarks', lazy=True)
     project = db.relationship('Project', back_populates='bookmarks', lazy=True)
@@ -83,5 +97,3 @@ class Comment(db.Model):
     #relationships
     user = db.relationship('User', back_populates='comments', lazy=True)
     project = db.relationship('Project', back_populates='comments', lazy=True)
-    
-
