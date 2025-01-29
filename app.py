@@ -328,6 +328,178 @@ class CommentData(Resource):
         except Exception as e:
             db.session.rollback()
             return {"message": "Error deleting comment"}, 500
+        
+
+class SkillData(Resource):
+
+    def get(self, skill_id=None):
+        # Fetch a specific skill or all skills
+        if skill_id:
+            skill = Skill.query.get(skill_id)
+            if not skill:
+                return {"message": "Skill not found"}, 404
+            return {
+                "id": skill.id,
+                "name": skill.name,
+                "details": skill.details,
+                "created_at": skill.created_at,
+                "updated_at": skill.updated_at,
+            }, 200
+        else:
+            skills = Skill.query.all()
+            return [
+                {
+                    "id": skill.id,
+                    "name": skill.name,
+                    "details": skill.details,
+                    "created_at": skill.created_at,
+                    "updated_at": skill.updated_at,
+                }
+                for skill in skills
+            ], 200
+
+    def post(self):
+        # Create a new skill
+        data = request.json
+        name = data.get('name')
+        details = data.get('details')
+
+        # Validate input
+        if not name or not details:
+            return {"message": "'name' and 'details' are required"}, 400
+
+        # Create a new skill
+        new_skill = Skill(name=name, details=details)
+        db.session.add(new_skill)
+
+        try:
+            db.session.commit()
+            return {"message": f"Skill '{new_skill.name}' created"}, 201
+        except Exception as e:
+            db.session.rollback()
+            return {"message": "Error creating skill"}, 500
+
+    def put(self, skill_id):
+        # Update an existing skill
+        skill = Skill.query.get(skill_id)
+        if not skill:
+            return {"message": "Skill not found"}, 404
+
+        data = request.json
+        if 'name' in data:
+            skill.name = data['name']
+        if 'details' in data:
+            skill.details = data['details']
+
+        try:
+            db.session.commit()
+            return {"message": f"Skill '{skill.name}' updated"}, 200
+        except Exception as e:
+            db.session.rollback()
+            return {"message": "Error updating skill"}, 500
+
+    def delete(self, skill_id):
+        # Delete a skill
+        skill = Skill.query.get(skill_id)
+        if not skill:
+            return {"message": "Skill not found"}, 404
+
+        try:
+            db.session.delete(skill)
+            db.session.commit()
+            return {"message": f"Skill '{skill.name}' deleted"}, 200
+        except Exception as e:
+            db.session.rollback()
+            return {"message": "Error deleting skill"}, 500
+
+class ProjectSkillData(Resource):
+    
+    # Add a skill to a project (create a new project-skill relationship)
+    def post(self):
+        data = request.json
+        project_id = data.get("project_id")
+        skill_id = data.get("skill_id")
+
+        if not project_id or not skill_id:
+            return {"message": "Project ID and Skill ID are required."}, 400
+        
+        # Check if the combination already exists
+        existing_project_skill = ProjectSkill.query.filter_by(project_id=project_id, skill_id=skill_id).first()
+        if existing_project_skill:
+            return {"message": "This project already has this skill."}, 400
+        
+        new_project_skill = ProjectSkill(project_id=project_id, skill_id=skill_id)
+        db.session.add(new_project_skill)
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return {"message": f"Error adding skill to project: {str(e)}"}, 500
+        
+        return {"message": f"Skill added to project successfully!"}, 201
+
+    # Get all skills for a project or all projects for a skill
+    def get(self):
+        project_id = request.args.get('project_id')
+        skill_id = request.args.get('skill_id')
+
+        if project_id:
+            # Get all skills for a specific project
+            project_skills = ProjectSkill.query.filter_by(project_id=project_id).all()
+            if not project_skills:
+                return {"message": "No skills found for this project"}, 404
+            return [
+                {
+                    "id": project_skill.id,
+                    "project_id": project_skill.project_id,
+                    "skill_id": project_skill.skill_id,
+                    "skill_name": project_skill.skill.name,  # Access skill name dynamically
+                }
+                for project_skill in project_skills
+            ], 200
+        
+        if skill_id:
+            # Get all projects for a specific skill
+            project_skills = ProjectSkill.query.filter_by(skill_id=skill_id).all()
+            if not project_skills:
+                return {"message": "No projects found for this skill"}, 404
+            return [
+                {
+                    "id": project_skill.id,
+                    "project_id": project_skill.project_id,
+                    "skill_id": project_skill.skill_id,
+                    "project_title": project_skill.project.title,  # Access project title dynamically
+                }
+                for project_skill in project_skills
+            ], 200
+
+        # Get all project-skill relationships
+        project_skills = ProjectSkill.query.all()
+        return [
+            {
+                "id": project_skill.id,
+                "project_id": project_skill.project_id,
+                "skill_id": project_skill.skill_id,
+                "project_title": project_skill.project.title,  # Access project title dynamically
+                "skill_name": project_skill.skill.name,  # Access skill name dynamically
+            }
+            for project_skill in project_skills
+        ], 200
+
+    # Remove a skill from a project
+    def delete(self, project_skill_id):
+        project_skill = ProjectSkill.query.get(project_skill_id)
+        if not project_skill:
+            return {"message": "Project-Skill relationship not found"}, 404
+        
+        try:
+            db.session.delete(project_skill)
+            db.session.commit()
+            return {"message": f"Skill removed from project successfully!"}, 200
+        except Exception as e:
+            db.session.rollback()
+            return {"message": f"Error removing skill from project: {str(e)}"}, 500
+
 
 
 
@@ -335,6 +507,8 @@ api.add_resource(UserData, '/user', '/user/<int:user_id>')
 api.add_resource(ProjectData, '/project', '/project/<int:project_id>')
 api.add_resource(BookmarkData, '/bookmark')
 api.add_resource(CommentData, '/comment')
+api.add_resource(SkillData, '/skill', '/skill/<int:skill_id>')
+api.add_resource(ProjectSkillData, '/projectskill', '/projectskill/<int:project_skill_id>')
 
 if __name__ == '__main__':
     with app.app_context():

@@ -26,6 +26,7 @@ class Skill(db.Model):
     __tablename__ =  'skills'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80), unique=True, nullable=False)
+    details = db.Column( db.Text, nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
     updated_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
 
@@ -42,7 +43,7 @@ class Project(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
    
    #relationships
-    skills = db.relationship('ProjectSkill', backref='project', lazy=True, cascade='all, delete-orphan')
+    skills = db.relationship('Skill', secondary='project_skills', backref=db.backref('projects', lazy='dynamic'))
     bookmarks = db.relationship('Bookmark', back_populates='project', lazy=True, cascade='all, delete-orphan')
     comments = db.relationship('Comment', back_populates='project', lazy=True, )
 
