@@ -4,6 +4,7 @@ from flask_migrate import Migrate
 from flask_restful import Api, Resource
 from flask_cors import CORS
 from datetime import datetime
+from validations import  validate_user_data, validate_project_data
 from models import db, User, Project, Comment, ProjectSkill, Skill, Bookmark
 
 app = Flask(__name__)
@@ -41,8 +42,9 @@ class UserData(Resource):
     def post(self):
         # Create a new user
         data = request.json
-        if not all(key in data for key in ['username', 'email', 'role']):
-            return {"message": "Missing required fields (username, email, role)"}, 400
+        errors = validate_user_data(data)
+        if errors :
+            return jsonify({'errors': errors}), 400
 
         new_user = User(username=data['username'], email=data['email'], role=data['role'])  
         db.session.add(new_user)
@@ -50,8 +52,8 @@ class UserData(Resource):
             db.session.commit()
         except Exception as e:
             db.session.rollback()
-            return {"message": "Username or email exists"}, 400
-        return {"message": f"User {new_user.username} created"}, 201 
+            return jsonify({"message": "Username or email exists"}), 400
+        return jsonify({"message": f"User {new_user.username} created"}), 201 
 
     def put(self, user_id):
         # Update a user
@@ -99,6 +101,7 @@ class ProjectData(Resource):
             "id": project.id,
             "title": project.title,
             "description": project.description,
+            "image": project.image,
             "user_id": project.user_id,
         }, 200
         else:
@@ -109,10 +112,11 @@ class ProjectData(Resource):
     def post(self):
         # Create a new project
         data = request.json
-        if not all(key in data for key in ['title', 'description', 'user_id']):
-            return {"message": "Missing required fields (title, description, user_id)"}, 400
+        errors = validate_project_data(data)
+        if errors:
+            return jsonify({'errors': errors}),404
         
-        new_project = Project(title=data["title"], description=data["description"], user_id=data["user_id"])
+        new_project = Project(title=data["title"], description=data["description"],image=data["image"] ,user_id=data["user_id"])
         db.session.add(new_project)
         try:
             db.session.commit()
@@ -130,6 +134,7 @@ class ProjectData(Resource):
         data = request.json
         project.title = data.get("title", project.title)
         project.description = data.get("description", project.description)
+        project.image = data.get("image", project.image)
         project.user_id = data.get("user_id", project.user_id)
         try:
             db.session.commit()
@@ -183,34 +188,49 @@ class BookmarkData(Resource):
             for bookmark in bookmarks
         ], 200
     
+    class BookmarkData(Resource):
     def post(self):
-        # Create a new bookmark
         data = request.json
-
-        # Extract user_id and project_id from the request body
         user_id = data.get('user_id')
         project_id = data.get('project_id')
+        action = data.get('action')  # "bookmark" or "unbookmark"
 
-        # Validate input
-        if not user_id or not project_id:
-            return {"message": "Both 'user_id' and 'project_id' are required"}, 400
-        
-        # Check if the bookmark already exists
-        existing_bookmark = Bookmark.query.filter_by(user_id=user_id, project_id=project_id).first()
-        if existing_bookmark:
-            return {"message": "This project is already bookmarked by the user"}, 400
+        if not user_id or not project_id or not action:
+            return {"message": "'user_id', 'project_id', and 'action' are required"}, 400
 
-        # Create a new bookmark
-        new_bookmark = Bookmark(user_id=user_id, project_id=project_id)
-        db.session.add(new_bookmark)
-        
-        try:
-            db.session.commit()
-            return {"message": f"Project {project_id} bookmarked by user {user_id}"}, 201
-        except Exception as e:
-            db.session.rollback()
-            return {"message": "Error creating bookmark"}, 500
-        
+        if action == "bookmark":
+            # Check if the bookmark already exists
+            existing_bookmark = Bookmark.query.filter_by(user_id=user_id, project_id=project_id).first()
+            if existing_bookmark:
+                return {"message": "This project is already bookmarked by the user"}, 400
+
+            # Create a new bookmark
+            new_bookmark = Bookmark(user_id=user_id, project_id=project_id)
+            db.session.add(new_bookmark)
+            try:
+                db.session.commit()
+                return {"message": f"Project {project_id} bookmarked by user {user_id}"}, 201
+            except Exception as e:
+                db.session.rollback()
+                return {"message": "Error creating bookmark"}, 500
+
+        elif action == "unbookmark":
+            # Check if the bookmark exists
+            bookmark = Bookmark.query.filter_by(user_id=user_id, project_id=project_id).first()
+            if not bookmark:
+                return {"message": "Bookmark not found"}, 404
+
+            # Delete the bookmark
+            try:
+                db.session.delete(bookmark)
+                db.session.commit()
+                return {"message": f"Bookmark for project {project_id} by user {user_id} deleted"}, 200
+            except Exception as e:
+                db.session.rollback()
+                return {"message": "Error deleting bookmark"}, 500
+
+        else:
+            return {"message": "Invalid action"}, 400
     def delete(self) :
         # Delete a bookmark
         data = request.json
@@ -423,30 +443,6 @@ class SkillData(Resource):
 class ProjectSkillData(Resource):
     
     # Add a skill to a project (create a new project-skill relationship)
-    def post(self):
-        data = request.json
-        project_id = data.get("project_id")
-        skill_id = data.get("skill_id")
-
-        if not project_id or not skill_id:
-            return {"message": "Project ID and Skill ID are required."}, 400
-        
-        # Check if the combination already exists
-        existing_project_skill = ProjectSkill.query.filter_by(project_id=project_id, skill_id=skill_id).first()
-        if existing_project_skill:
-            return {"message": "This project already has this skill."}, 400
-        
-        new_project_skill = ProjectSkill(project_id=project_id, skill_id=skill_id)
-        db.session.add(new_project_skill)
-        try:
-            db.session.commit()
-        except Exception as e:
-            db.session.rollback()
-            return {"message": f"Error adding skill to project: {str(e)}"}, 500
-        
-        return {"message": f"Skill added to project successfully!"}, 201
-
-    # Get all skills for a project or all projects for a skill
     def get(self):
         project_id = request.args.get('project_id')
         skill_id = request.args.get('skill_id')
@@ -494,6 +490,31 @@ class ProjectSkillData(Resource):
             for project_skill in project_skills
         ], 200
 
+    def post(self):
+        data = request.json
+        project_id = data.get("project_id")
+        skill_id = data.get("skill_id")
+
+        if not project_id or not skill_id:
+            return {"message": "Project ID and Skill ID are required."}, 400
+        
+        # Check if the combination already exists
+        existing_project_skill = ProjectSkill.query.filter_by(project_id=project_id, skill_id=skill_id).first()
+        if existing_project_skill:
+            return {"message": "This project already has this skill."}, 400
+        
+        new_project_skill = ProjectSkill(project_id=project_id, skill_id=skill_id)
+        db.session.add(new_project_skill)
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return {"message": f"Error adding skill to project: {str(e)}"}, 500
+        
+        return {"message": f"Skill added to project successfully!"}, 201
+
+    
+
     # Remove a skill from a project
     def delete(self, project_skill_id):
         project_skill = ProjectSkill.query.get(project_skill_id)
@@ -512,7 +533,7 @@ class ProjectSkillData(Resource):
 
 
 api.add_resource(UserData, '/user', '/user/<int:user_id>')
-api.add_resource(ProjectData, '/project', '/project/<int:project_id>')
+api.add_resource(ProjectData, '/projects', '/projects/<int:project_id>')
 api.add_resource(BookmarkData, '/bookmark')
 api.add_resource(CommentData, '/comment')
 api.add_resource(SkillData, '/skill', '/skill/<int:skill_id>')

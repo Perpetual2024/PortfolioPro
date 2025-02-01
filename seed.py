@@ -10,7 +10,8 @@ with app.app_context():
       user = User(
          username= fake.user_name(),
          email=fake.email(),
-         role= fake.random_element(elements=('admin','user'))
+         role= fake.random_element(elements=('admin','user')),
+         
       )
       db.session.add(user)
       db.session.commit()
@@ -19,6 +20,7 @@ with app.app_context():
       project = Project(
          title = fake.word(),
          description = fake.text(),
+         image =fake.image_url(),
          user_id = fake.random_element(elements=(1,2,3,4,5,6))
 
       )

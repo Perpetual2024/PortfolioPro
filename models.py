@@ -16,25 +16,13 @@ class User(db.Model):
     updated_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
 
     #relationships
-    project = db.relationship('Project', backref='user', lazy=True)
+    projects = db.relationship('Project', backref='user', lazy=True)
     bookmarks = db.relationship('Bookmark', back_populates='user', lazy=True)
     comments = db.relationship('Comment', back_populates='user', lazy=True)
 
-#validation
-@validates('email')
-def validate_email(self, key, value):
-    if '@' not in value:
-        raise AssertionError('Invalid email')
-        return value
-    
-@validates('username') 
-def validate_username(self, key, value):
-    if len(value) < 3:
-        raise AssertionError('Username must be at least 3 characters long')
-    return value
-  
+def get_user_by_email(email):
+    return User.query.filter_by(email=email).first()
 
-   
 
 class Skill(db.Model):
     __tablename__ =  'skills'
@@ -52,8 +40,9 @@ class Project(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(80), unique=True, nullable=False)
     description = db.Column(db.String(120), nullable=False)
+    image = db.Column(db.String(120), nullable=False, server_default='default.jpg')
     created_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
-    updated_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
+    updated_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
    
    #relationships
@@ -97,3 +86,4 @@ class Comment(db.Model):
     #relationships
     user = db.relationship('User', back_populates='comments', lazy=True)
     project = db.relationship('Project', back_populates='comments', lazy=True)
+     
