@@ -107,7 +107,7 @@ class ProjectData(Resource):
         else:
             # Get all projects
             projects = Project.query.all()
-            return [{"id": project.id, "title": project.title} for project in projects], 200
+            return [{"id": project.id, "title": project.title, "description": project.description} for project in projects], 200
         
     def post(self):
         # Create a new project
@@ -188,7 +188,6 @@ class BookmarkData(Resource):
             for bookmark in bookmarks
         ], 200
     
-    class BookmarkData(Resource):
     def post(self):
         data = request.json
         user_id = data.get('user_id')
@@ -231,6 +230,7 @@ class BookmarkData(Resource):
 
         else:
             return {"message": "Invalid action"}, 400
+
     def delete(self) :
         # Delete a bookmark
         data = request.json
