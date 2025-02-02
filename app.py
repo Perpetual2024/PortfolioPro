@@ -6,9 +6,11 @@ from flask_cors import CORS
 from datetime import datetime
 from validations import  validate_user_data, validate_project_data
 from models import db, User, Project, Comment, ProjectSkill, Skill, Bookmark
+from flask_sqlalchemy import SQLAlchemy
+import os
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///portfolio.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URI')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)

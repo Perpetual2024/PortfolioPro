@@ -39,8 +39,8 @@ class Project(db.Model):
     __tablename__ =  'projects'
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(80), unique=True, nullable=False)
-    description = db.Column(db.String(120), nullable=False)
-    image = db.Column(db.String(120), nullable=False, server_default='default.jpg')
+    description = db.Column(db.String(300), nullable=False)
+    image = db.Column(db.String(355), nullable=False, server_default='default.jpg')
     created_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
     updated_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
@@ -78,7 +78,7 @@ class Bookmark(db.Model):
 class Comment(db.Model):
     __tablename__ = 'comments'
     id = db.Column(db.Integer, primary_key=True)
-    content = db.Column(db.String(120), nullable=False)
+    content = db.Column(db.Text)
     project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
