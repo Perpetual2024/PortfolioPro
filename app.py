@@ -6,7 +6,6 @@ from flask_cors import CORS
 from datetime import datetime
 from validations import  validate_user_data, validate_project_data
 from models import db, User, Project, Comment, ProjectSkill, Skill, Bookmark
-from flask_sqlalchemy import SQLAlchemy
 import os
 
 app = Flask(__name__)
@@ -39,7 +38,7 @@ class UserData(Resource):
          
         # Get all users
         users = User.query.all()
-        return [{"id": user.id, "username": user.username, "email": user.email} for user in users], 200
+        return [{"id": user.id, "username": user.username, "email": user.email, "role": user.role} for user in users], 200
 
     def post(self):
         # Create a new user
